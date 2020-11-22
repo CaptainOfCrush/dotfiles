@@ -1,53 +1,622 @@
 [user]
     name = Nathan Dumar
     email = njdumar@gmail.com
+[core]
+	filemode = false
+	trustctime = false
+	editor = vim
+	warnambiguousrefs = false
+	autocrlf = input
 [diff]
-    tool=vimdiff
-[difftool "meld"]
-    path = meld
+    tool = bc4
+	renameLimit = 999999
+[difftool]
+    prompt = true
 [merge]
-    tool=vimdiff
+	tool = vimdiff
     conflictstyle = diff3
+	renameLimit = 999999
+	ff = false
 [mergetool "mymeld"]
-    cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE $MERGED
+    cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --auto-merge $LOCAL $BASE $REMOTE --output $MERGED
+[mergetool "nvim"]
+    cmd = nvim -f -d -c '4wincmd w | wincmd J' $LOCAL $BASE $REMOTE $MERGED
+    #cmd = gvim -f -d -c '4wincmd w | wincmd J' -c 'set diffexpr=\"\"' -c 'set diffopt+=iwhite' $LOCAL $BASE $REMOTE $MERGED
+[push]
+	default = current
+[svn]
+	pushmergeinfo = true
+[pull]
+	rebase = true
+[gitreview]
+	remote = origin
+[rerere]
+	enabled = true
+[fetch]
+	prune = true
+[difftool "bc4"]
+	trustExitCode = true
+	cmd = /usr/bin/bcompare $LOCAL $REMOTE
 [alias]
-    pullall = !git pull && git submodule update --recursive --init
+
+    find-merge = "!sh -c 'commit=$0 && branch=${1:-HEAD} && (git rev-list $commit..$branch --ancestry-path | cat -n; git rev-list $commit..$branch --first-parent | cat -n) | sort -k2 -s | uniq -f1 -d | sort -n | tail -1 | cut -f2'"
+    show-merge = "!sh -c 'merge=$(git find-merge $0 $1) && [ -n \"$merge\" ] && git show $merge'"
+
+    # Log of current branch
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --first-parent
+
+    # Log of all branches
+    lgall = log --graph --color --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) \
+        %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%C(bold white)  — %an%C(reset)\
+        %n''          %C(white)%s%C(reset) ' --abbrev-commit
+
+    # Log of all branches, one line
+    lgallone = log --graph --color --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) \
+          %C(white)%s%C(reset) %C(bold white)— %an%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit \
+          --date=relative
+
+    # Log of all branches, first parent for cleaner log
+    lgfirst = log --graph --color --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold yellow)%d%C(reset)%C(bold white) %an%C(reset) %C(white)%s%C(reset) ' --abbrev-commit --first-parent
+
+    # Show only the branches, not all the commits
+    heir = log --graph --color --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) \
+          %C(white)%s%C(reset) %C(bold white)— %an%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit \
+          --date=relative --simplify-by-decoration
+
+    listbranch = !git for-each-ref --format='%(color:cyan)%(authordate:format:%m/%d/%Y %I:%M %p)    \
+        %(align:25,left)%(color:yellow)%(authorname)%(end) %(color:reset)%(refname)' --sort=authordate refs/remotes
+
+    co = checkout
+    st = status
+    cp = cherry-pick -X patience -X ignore-space-change
+    pullsub = !git pull && git submodule update --recursive --init
     mergenff = merge --no-ff
     unstage = reset HEAD
     uncommit = reset --soft HEAD^
-    svndiff = diff --no-prefix
+    npdiff = diff --no-prefix
+	track = "!f() { ( git for-each-ref --format=\"local: %(refname:short) <--sync--> remote: %(upstream:short)\" refs/heads && echo --Remotes && git remote -v); }; f"
+    ignored = !git ls-files -v | grep "^[[:lower:]]"
+
+    getindex = show :$1
+    # Alternatively, git checkout-index --prefix=<temp/> -- $1
+
+    divergedlong = !sh -c 'echo "" &&\
+        echo "Commits in $1 and not in yours" &&\
+        git cherry -v @ $1 &&\
+        echo "" &&\
+        echo "Commits in your branch and not in $1" &&\
+        git cherry -v $1 @' -
+
+    diverged = !sh -c 'echo "" &&\
+        echo "You are ahead of $1 by `git cherry -v ${1} @ | wc -l` commits and behind by\
+        `git cherry -v @ ${1} | wc -l` commits" && echo ""' -
+
+    branchcompare = !sh -c 'echo "" &&\
+        echo "$2 is ahead of $1 by `git cherry -v ${1} ${2} | wc -l` commits and behind by\
+        `git cherry -v ${2} ${1} | wc -l` commits" && echo ""' -
+
+    branchcomparelong = !sh -c 'echo "" &&\
+        echo "Commits in $1 and not $2" &&\
+        git cherry -v $2 $1 &&\
+        echo "" &&\
+        echo "Commits in $2 and not in $1" &&\
+        git cherry -v $1 $2' -
+
+    listtags = "!f() { git log --simplify-by-decoration --decorate --pretty=oneline $1 | fgrep 'tag: '; }; f"
+
+    listuniquetags = "!f() {\
+                            baseCommit=`git merge-base $1 $2`;\
+                            echo $baseCommit;\
+                            git log --simplify-by-decoration --decorate --pretty=oneline $baseCommit..$2 | fgrep 'tag: ';\
+                         }; f"
+
+    # Find the common base between where you are and the branch you are merging into. Merge into that base to create a single
+    # commit out of your branch
+    automerge = "!f() {\
+        if [ $# -eq 1 ];\
+        then\
+            currentCommit=`git rev-parse HEAD`;\
+            currentBranch=`git rev-parse --abbrev-ref HEAD`;\
+            baseCommit=`git merge-base $1 HEAD`;\
+            git checkout $baseCommit;\
+            git merge --squash --ff $currentCommit;\
+            git commit;\
+            git tag -f SQUASHED_COMMIT;\
+            git checkout ${currentBranch#heads/};\
+            echo;\
+            echo 'Example push to Gerrit:';\
+            echo 'Draft:  git push origin SQUASHED_COMMIT:refs/drafts/CCB8';\
+            echo 'Review: git push origin SQUASHED_COMMIT:refs/for/CCB8';\
+        else\
+            echo '';\
+            echo 'Supply the branch name you are merging into';\
+            echo 'Example: git automerge origin/CCB8';\
+        fi;\
+        }; f"
+
+    # base  git show :1:library/ind_sys.cpp > library/ind_sys.cpp.base
+    # ours git show :2:library/ind_sys.cpp > library/ind_sys.cpp
+    # git merge-file Indirection/IndirectionSystem/src/IndirectionSystem.cpp library/ind_sys.cpp.base library/ind_sys.cpp
+    #
+
+    # Open a diff of every unstaged change in a tab in vim/gvim
+    vimdiff="!vim -p $(git diff --name-only) -c 'tabdo :Gvdiff'"
+    gvimdiff="!gvim -p $(git diff --name-only) -c 'tabdo :Gvdiff'"
+
+    # Open a diff of every change in your current commit in a tab in vim/gvim
+    vimpreviousdiff="!vim -p $(git diff --name-only HEAD~1 HEAD) -c 'tabdo :Gvdiff HEAD~1'"
+    gvimpreviousdiff="!gvim -p $(git diff --name-only HEAD~1 HEAD) -c 'tabdo :Gvdiff HEAD~1'"
+
+    # Open a diff of every change between where you are and the specifiec location (usually a branch) in a tab in vim/gvim
+    vimbranchdiff = "!f() {\
+                        vim -p $(git diff --name-only $1 HEAD) -c \"tabdo :Gvdiff $1\";\
+                     }; f"
+    gvimbranchdiff = "!f() {\
+                        gvim -p $(git diff --name-only $1 HEAD) -c \"tabdo :Gvdiff $1\";\
+                     }; f"
+
+    # If you're using Beyond Compare as a difftool, open new sessions in tabs
+    diffallbc = "!f() { (git diff --name-only \"$@\") | while read filename; do\
+                       (git difftool \"$@\" --no-prompt \"$filename\" &) done }; f"
+
+    # Ammend all modified files to commit, keep the commit message
+    commend = commit -a --amend --no-edit
+    comend = !git commend
+
+    #-----------------------------------------------------------------------------------------------------------------
+    # WARNING - Only use the following merge resolution commands to resolve conflicts that have already been committed
+    #-----------------------------------------------------------------------------------------------------------------
+
+    # List all files where conflict markers are found. Excludes .git folder and binary files
+    #
+    # git listconflicts
+    # git listconflicts <directory>
+    # git listconflicts <filename>
+    #
+    listconflicts = "!f() {\
+        if [ $# -ge 1 ];\
+        then\
+            dir=$1;\
+        else\
+            dir='';\
+        fi;\
+        (git grep -Il '^<<<<<<<' -- $dir);\
+        }; f"
+
+    # Force the git memrgetool to run on a specific file that has conflicts
+    # Supply the mergecommit to retrieve the real ours/theirs/base files to get better context for the changes in the mergetool
+    #
+    # git custommergetool <filename>
+    # git custommergetool <filename> <mergecommit(optional)>
+    #
+    custommergetool = "!f() {\
+        file=\"${GIT_PREFIX:-./}$1\";\
+        if [ ! -e $file ];\
+        then\
+            echo \"The file $file does not exist\";\
+            exit 1;\
+        fi;\
+        BASE=\"$file\".base;\
+        REMOTE=\"$file\".theirs;\
+        LOCAL=\"$file\".mine;\
+        MERGED=\"$file\";\
+        BACKUP=\"$file\".orig;\
+        commit=\"\";\
+        if [ $# -eq 1 ];\
+        then\
+            string=`grep -n -m 1 \"^>>>>>>>\" ${file}`;\
+            linenumber=${string%%:*};\
+            blame=`git blame -L\"$linenumber\",+1 \"$file\"`;\
+            commit=${blame%% *};\
+            echo ;\
+            echo \"---------- Getting merge commit revision ----------\";\
+            echo \"Line number of first conflict marker: $linenumber\";\
+            echo \"Commit revision of that line: $commit\";\
+            if [ $(git log -n 1 $commit --pretty=%P | wc -w) -ne 2 ];\
+            then\
+                echo ;\
+                echo \"Conflict markers did not come from a merge commit, they may have been added afterwards\";\
+                echo \"Rerun with the merge commit hash as the last argument if you want full context for the changes\";\
+                echo \"Example: git custommergetool <filename> <mergecommit>\";\
+                commit=\"\";\
+            fi;\
+            echo ;\
+        elif [ $# -eq 2 ];\
+        then\
+            commit=$2;\
+            if [ $(git log -n 1 $commit --pretty=%P | wc -w) -ne 2 ];\
+            then\
+                echo \"This commit is not a merge commit: $commit\";\
+                exit 1;\
+            fi;\
+        else\
+            echo \"Please at least supply one file that has conflicts as an argument eg. git resolveconflicts Filename.cpp\";\
+            exit 1;\
+        fi;\
+        if [ -z \"$commit\" ];\
+        then\
+            if ! git grep -q \"<<<<<<<\" -- \"$file\" || ! git grep -q \">>>>>>>\" -- \"$file\" || ! git grep -q \"=======\" -- \"$file\" || ! git grep -q \"|||||||\" -- \"$file\";\
+            then\
+                echo \"File does not contain conflict markers (3-way diff markers required)\";\
+                exit 1;\
+            fi;\
+            sed '/^<<<<<<</,/^=======/d; /^>>>>>>>/d' $file > \"${REMOTE}\";\
+            sed '/^|||||||/,/^>>>>>>>/d; /^<<<<<<</d' $file > \"${LOCAL}\";\
+            sed '/^<<<<<<</,/^|||||||/d; /^=======/,/^>>>>>>>/d' $file > \"${BASE}\";\
+            cp \"${file}\" \"${BACKUP}\";\
+            git manualMergeTool \"${BASE}\" \"${REMOTE}\" \"${LOCAL}\" \"${MERGED}\" \"${BACKUP}\";\
+        else\
+            echo;\
+            echo \"--------- Searching for original and new filenames ----------\";\
+            newname=$file;\
+            oldname=$file;\
+            string=`grep -m 1 \"^<<<<<<<\" ${file}`;\
+            case \"$string\" in\
+            *:*) newname=${string##*:};;\
+            *' './*) newname=${string##* \\./};;\
+            esac;\
+            string=`grep -m 1 \"^>>>>>>>\" ${file}`;\
+            case \"$string\" in\
+            *:*) oldname=${string##*:};;\
+            *' './*) oldname=${string##* \\./};;\
+            esac;\
+            echo \"My filename: $newname\";\
+            echo \"Their filename: $oldname\";\
+            echo;\
+            git show ${commit}^1:${newname} > \"${LOCAL}\";\
+            git show \"${commit}^2\":${oldname} > ${REMOTE};\
+            if ! git show $(git merge-base ${commit}^1 ${commit}^2):${oldname} > \"${BASE}\";\
+            then\
+                echo \"Trying to find the base file again again\";\
+                if ! git show $(git merge-base ${commit}^1 ${commit}^2):${newname} > \"${BASE}\";\
+                then\
+                    echo \"Failed to find base file, cannot use the commit has in this command\";\
+                    exit 1;\
+                fi;\
+            fi;\
+            git show $(git merge-base ${commit}^1 ${commit}^2):${oldname} > \"${BASE}\";\
+            cp \"${file}\" \"${BACKUP}\";\
+            git manualMergeTool \"${BASE}\" \"${REMOTE}\" \"${LOCAL}\" \"${MERGED}\" \"${BACKUP}\";\
+        fi;\
+        }; f"
+
+    # Take in all the files needed to run though git's mergetool
+    # This alias isn't really meant to be called by the user
+    #
+    # git manualMergeTool <basefile> <remotefile(theirs)> <localfile(mine)> <mergedfile(result)>
+    #
+    manualmergetool = "!f() {\
+        BASE=\"$1\";\
+        REMOTE=\"$2\";\
+        LOCAL=\"$3\";\
+        MERGED=\"$4\";\
+        BACKUP=\"$5\";\
+        merge_tool=$(git config merge.tool);\
+        merge_cmd=$(git config mergetool.\"$merge_tool\".cmd);\
+        MERGE_TOOLS_DIR=$(git --exec-path)/mergetools;\
+        merge_tool_path=$(git config mergetool.\"$merge_tool\".path);\
+        if test -z \"$merge_tool_path\";\
+        then\
+            merge_tool_path=$merge_tool;\
+        fi;\
+        echo \"Using merge tool $merge_tool_path\";\
+        if test -z \"$merge_tool_path\";\
+        then\
+            echo \"No merge tool configured\";\
+            exit;\
+        fi;\
+        if [ -z \"$merge_cmd\" ];\
+        then\
+            echo \"Using default tool cmd\";\
+            . \"$(git --exec-path)/git-mergetool--lib\";\
+            . \"$MERGE_TOOLS_DIR/$merge_tool\";\
+            merge_cmd $merge_tool;\
+        else\
+            echo \"Using user custom tool cmd\";\
+            eval \"$merge_cmd\";\
+        fi;\
+        rm $BASE;\
+        rm $REMOTE;\
+        rm $LOCAL;\
+        rm $BACKUP;\
+        }; f"
+
+    # Loop through all the conflicts found (everywhere or in the dir specified) and run the mergetool against it
+    # Supply the mergecommit to retrieve the real ours/theirs/base files to get better context for the changes in the mergetool
+    #
+    # git resolveconflicts
+    # git resolveconflicts <mergecommit>
+    # git resolveconflicts <file/dir>
+    # git resolveconflicts <file/dir> <mergecommit>
+    #
+    resolveconflicts = "!f() {\
+        dir='';\
+        commit='';\
+        if [ $# -eq 1 ];\
+        then\
+            if git rev-parse --quiet --verify $1;\
+            then\
+                commit=$1;\
+            else\
+                dir=$1;\
+            fi\
+        elif [ $# -eq 2 ];\
+        then\
+            if git rev-parse --quiet --verify $1;\
+            then\
+                dir=$2;\
+                commit=$1;\
+            elif git rev-parse --quiet --verify $2;\
+            then\
+                dir=$1;\
+                commit=$2;\
+            else\
+                echo \"Two arguments supplied, but neither was a commit\";\
+                exit 1;\
+            fi\
+        elif [ $# -ge 3 ];\
+        then\
+            echo \"At most two arguments allowed: \";\
+            echo \"\";\
+            echo \"Resolve all conflicts: git resolveconflicts \";\
+            echo \"Resolve specific conflicts: git resolveconflicts <file/dir> \";\
+            echo \"Resolve all conflicts, get real mine/theirs/base files: git resolveconflicts <mergecommit> \";\
+            echo \"Resolve specific conflicts, get real mine/theirs/base files: git resolveconflicts <file/dir> <mergecommit> \";\
+            exit 1;\
+        fi;\
+        dir=\"${GIT_PREFIX:-./}$dir\";\
+        if [ ! -e $dir ];\
+        then\
+            echo \"Either the file/directory $dir does not exist, or $dir is not a valid commit hash\";\
+            exit 1;\
+        fi;\
+        for file in $(git listconflicts $dir);\
+        do\
+            git customMergeTool $file $commit;\
+        done;\
+        }; f"
+
+    # Force files to be merged together that failed to be merged because the rename detection failed.
+    # Both files must exist, the merge conflict "deleted by us" is an indication that the file didn't merge.
+    #
+    # git mergerenamedfile <oldname> <newname>
+    # git mergerenamedfile <oldname> <newname> <merge-commit>
+    #
+    mergerename = "!f() {\
+        oldname=\"${GIT_PREFIX:-./}$1\";\
+        newname=\"${GIT_PREFIX:-./}$2\";\
+        basename=\"$oldname\".base;\
+        if [ $# -eq 2 ];\
+        then\
+            if [ -e \"${GIT_PREFIX:-./}.git/MERGE_HEAD\" ];\
+            then\
+                echo \"Merge in progress\";\
+                leftcommit=`git log -n 1 --pretty=format:\"%h\"`;\
+                rightcommit=`cat \"${GIT_PREFIX:-./}.git/MERGE_HEAD\"`;\
+                echo $leftcommit;\
+                echo $rightcommit;\
+            else\
+                commit=`git log --merges -n 1 --pretty=format:\"%h\"`;\
+                leftcommit=${commit}^1;\
+                rightcommit=${commit}^2;\
+            fi;\
+        elif [ $# -eq 3 ];\
+        then\
+            commit=$3;\
+            if [ $(git log -n 1 $commit --pretty=%P | wc -w) -ne 2 ];\
+            then\
+                echo \"This commit is not a merge commit: $commit\";\
+                exit 1;\
+            fi;\
+            leftcommit=${commit}^1;\
+            rightcommit=${commit}^2;\
+        else\
+            echo;\
+            echo \"At least two arguments required, the old and new filenames\";\
+            echo \"Example: git mergerenamedfile <oldname> <newname>\";\
+            echo;\
+            exit 1;\
+        fi;\
+        if [ ! -e $oldname ];\
+        then\
+            echo \"The file $oldname does not exist locally\";\
+            exit 1;\
+        fi;\
+        if [ ! -e $newname ];\
+        then\
+            echo \"The file $newname does not exist locally\";\
+            exit 1;\
+        fi;\
+        if ! git show $(git merge-base ${leftcommit} ${rightcommit}):${oldname} > \"${basename}\";\
+        then\
+            echo \"Trying again with the other name\";\
+            if ! git show $(git merge-base ${leftcommit} ${rightcommit}):${newname} > \"${basename}\";\
+            then\
+                echo ;\
+                echo \"\";\
+                echo \"Could not find the base file, perhaps the filename and/or the directory changed in both branches.\";\
+                echo \"If you need to find it, checkout the base commit: `git merge-base ${leftcommit} ${rightcommit}`\";\
+                echo \"If you know the original path and filename, enter it now (CASE-SENSITIVE!) \";\
+                echo \"\";\
+                read -r -p \"Please enter the original file-name (enter nothing to quit): \" origName;\
+                echo \"\";\
+                if [ -z \"$origName\" ];\
+                then\
+                    exit 1;\
+                elif ! git show $(git merge-base ${leftcommit} ${rightcommit}):${origName} > \"${basename}\";\
+                then\
+                    echo \"Could not find the base filename. Both branches may have renamed the file\";\
+                    exit 1;\
+                fi;\
+            fi;\
+        fi;\
+        echo \"\";\
+        echo \"Base commit and file found, attempting the merge\";\
+        filetype=`file \"$oldname\"`;\
+        case \"$filetype\" in\
+        *CRLF*) `unix2dos \"$basename\"`;\
+        esac;\
+        git merge-file $newname $basename $oldname;\
+        rm $basename;\
+        rm $oldname;\
+        echo \"Success. Check the resulting modified file.\";\
+        echo;\
+        echo \"**********************************************************************************\";\
+        echo \"If you're doing a merge/rebase/cherry-pick and you like the resulting merged file,\";\
+        echo \"do not forget to resolve the 'deleted by us' conflict file\";\
+        echo;\
+        echo \"git rm $oldname\";\
+        echo \"**********************************************************************************\";\
+        echo;\
+        }; f"
+
+    # Force the changes from a renamed file to be merged into a give file
+    # git mergerenamedfile <oldname> <newname>
+#    cherryrename = "!f() {\
+#        oldname=\"${GIT_PREFIX:-./}$1\";\
+#        patch=\"temp.patch\";\
+#        newname=\"${GIT_PREFIX:-./}$2\";\
+#        path=\"${GIT_PREFIX:-./}.git/CHERRY_PICK_HEAD\";\
+#        if [ -f \"${GIT_PREFIX:-./}.git\" ];\
+#        then\
+#            path=`sed 's/.*\\s//' ${GIT_PREFIX:-./}.git`/CHERRY_PICK_HEAD;\
+#            echo $path;\
+#        fi;\
+#        commit=`cat $path`;\
+#        echo \"Commit being cherry-picked: $commit\";\
+#        echo;\
+#        git diff ${commit} ${commit}^1 -- $oldname > $patch;\
+#        patch -p1 $newname $patch;\
+#        rm $patch;\
+#        }; f"
+
     svn-fetch-all = svn fetch --fetch-all
 
+    # Do all the svn updating defined above in one command
+    svn-update-all = !git svn-fetch-all $1 && git svn-branch-all $1 && git svn-rebase-all $1 && git checkout master && git svn rebase
+
     # Create an svn compatible patch, complete with svn revision info
+    # 'git svn-diff <branch> <branch>' 'git svn-diff master HEAD > something.patch'
+    # 'git svn-diff `git merge-base <svnBranch> <branch>` <branch>'
     svn-diff = !~/dotfiles/git-svn-diff.sh
 
-    # Find where this branch meets master
-    oldest-ancestor = !zsh -c 'diff --old-line-format= --new-line-format= <(git rev-list --first-parent \"${1:-master}\") \
-                      <(git rev-list --first-parent \"${2:-HEAD}\") | head -1' -
+    # Creates local branches based off of all svn branches and tags. Since tags are really svn branches, a branch has to be made so that
+    # there is something to push, you can just push a tag that is not on a branch to an git repo.
+    # This requires git 1.8.3.2 or later. Git does not allow a local branch to track an svn branch. Just checking out a branch at the svn
+    # branch location is enough for 'git svn rebase' to work. The first argument specifies the svn clone prefix.
+    # http://stackoverflow.com/questions/19712735/git-svn-cannot-setup-tracking-information-starting-point-is-not-a-branch
+    svn-branch-all = "!f() {\
+        if [[ $# -ge 1 ]];\
+        then\
+           for remote in `git branch --remote --list $1*`;\
+           do\
+              if [[ $remote != *\"@\"* ]];\
+              then\
+                 if [[ $remote == *\"tags\"* ]];\
+                 then\
+                    git checkout -b ${1}_tag_${remote##*/} $remote;\
+                 else\
+                    git checkout -b ${1}_${remote##*/} $remote;\
+                 fi\
+              fi;\
+           done;\
+        else\
+           echo Please specify the svn-remote prefix used for the svn clone. eg. git svn-branch-all svn.;\
+           echo The prefix is useful when cloning multiple svn modules so that branch names do not collide.;\
+           echo It also help to differentiate between the svn remote branches and branches from a real git remote.;\
+        fi\
+        }; f"
 
-    # Find where this branch branched of from any given branch. 'git first-ancestor-with <branch-name>
-    first-ancestor-with = !zsh -c 'diff --old-line-format= --new-line-format= <(git rev-list --first-parent \"${1:-$1}\") \
-                      <(git rev-list --first-parent \"${2:-HEAD}\") | head -1' -
+    # Rebases all local branches based off of all svn branches created by tthe svn-branchall command.
+    # There is some wierd issue where `git branch --list $1*' also returns all the files/folders in the current directory, but only when
+    # used in a bash for loop. I still don't believe it, but I tried it over and over again before I ran out of patience. So this
+    # is the long way...
+    svn-rebase-all = "!f() {\
+        if [[ $# -ge 1 ]];\
+        then\
+           for remote in `git branch --remote --list $1*`;\
+           do\
+              if [[ $remote != *\"@\"* ]];\
+              then\
+                 if [[ $remote != *\"tags\"* ]];\
+                 then\
+                    git checkout ${1}_${remote##*/}; git svn rebase;\
+                 fi\
+              fi;\
+           done;\
+        else\
+           echo Please specify the svn-remote prefix used for the svn clone. eg. git svn-rebase-all svn;\
+           echo The prefix is useful when cloning multiple svn modules so that branch names do not collide.;\
+           echo It also help to differentiate between the svn remote branches and branches from a real git remote.;\
+        fi\
+        }; f"
 
-[core]
-    fileMode = false
+    # Convert an svn repo to a git one by creating git branches from svn ones and converting tags to actual tags by tagging the commit
+    # the svn tag was created from, which means finding the branch the tag was created from. Since svn tags are also branches, this is annoying.
+    # Library tags are made from master (svn trunk), so that's easy. Release tags are made on release branches, so figure it out.
+    svn-convert = "!f() {\
+        if [[ $# -ge 1 ]];\
+        then\
+           for remote in `git branch --remote --list $1*`;\
+           do\
+              if [[ $remote != *\"@\"* ]];\
+              then\
+                 if [[ $remote == *\"tags\"*\"LC\"* ]];\
+                 then\
+                    git checkout $remote;\
+                    git checkout `git oldest-ancestor`;\
+                    git tag ${remote##*/};\
+                 elif [[ $remote != *\"tags\"*\"R\"* ]];\
+                 then\
+                    git checkout -b ${remote##*/} $remote;\
+                 fi\
+              fi;\
+           done;\
+           for remote in `git branch --remote --list $1*`;\
+           do\
+              if [[ $remote != *\"@\"* ]] && [[ $remote == *\"tags\"*\"R\"* ]];\
+              then\
+                  FOUND=0;\
+                  git checkout $remote;\
+                  for COMMIT in $(git rev-list --max-count=20 HEAD);\
+                  do\
+                      for BRANCH in $(git for-each-ref --format=\"%(refname)\" refs/heads);\
+                      do\
+                          if (git rev-list $BRANCH | fgrep -q $COMMIT);\
+                          then\
+                              echo $BRANCH;\
+                              git checkout `git merge-base HEAD $BRANCH`;\
+                              git tag ${remote##*/};\
+                              FOUND=1;\
+                              break;\
+                          fi;\
+                      done;\
+                      if [ $FOUND -gt 0 ];\
+                      then\
+                          break;\
+                      fi;\
+                  done;\
+              fi;\
+           done;\
+        else\
+           echo Please specify the svn-remote prefix used for the svn clone. eg. git svn-branch-all svn.;\
+           echo The prefix is useful when cloning multiple svn modules so that branch names do not collide.;\
+           echo It also help to differentiate between the svn remote branches and branches from a real git remote.;\
+        fi\
+        }; f"
 
-    # Create svn compatible patch: git diff --no-prefix > ~/someFeature.diff
-    # or use the git-svn-diff.sh script to add in the svn revision numbers to the patch.
-    # eg. 'git svn-diff <svn base> <local branch tip> > someFeature.patch'
+    # Notes:
     #
-    # To apply to svn: patch -p0 < ~/someFeature.diff
+    # dos2unix patchfile.diff
+    # dos2unix $(grep 'Index:' patchfile.diff | awk '{print $2}')
+    # patch --verbose -p0 -i patchfile.diff
+    # unix2dos $(grep 'Index:' patchfile.diff | awk '{print $2}')
     #
-    # NOTE: If your files has mixed/unix line endings but the wirking copy is dos, convert the entire patch file
-    # to dos format (unix2dos filename) and apply the patch. Treat it like a binary
-    # so that is doesn't strip the CRs: patch -p0 --binary < ~/someFeature.patch. Also, linux hates patching dos
-    # files, better to have a checkout with unix line endings and convert the patch to have them as well. It workd better.
-    #
-    # rebase onto can move a branch backwards: rebase --oonto <destinationBranch/commit> <branchToMove'sBase> <branchToMove(HEAD)>
+    # rebase onto can move a branch backwards: rebase --onto <destinationBranchOrCommit> <branchToMove'sBase> <branchToMove(HEAD)>
     #
     # To ignore files already checked into the repo:
     #   - git update-index --assume-unchanged file/to/ignore.txt
     # And to undo it:
     #   - git update-index --no-assume-unchanged file/to/ignore.txt
-[push]
-	default = matching
+[checkout]
+	defaultRemote = origin

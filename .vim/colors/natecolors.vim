@@ -1,19 +1,18 @@
 
 "------------------------Color Scheme Settings----------------------------
-au BufReadPost * syntax match Braces "[(){}\[\]]"
+au BufReadPost * syn match    Braces          "[(){}\[\]]"
 au BufReadPost * syn match    cCustomParen    "(" contains=cParen
 au BufReadPost * syn match    cCustomFunc     "\w\+\s*(" contains=cCustomParen
 au BufReadPost * syn match    cCustomScope    "::"
 au BufReadPost * syn match    cCustomClass    "\w\+\s*::" contains=cCustomScope
 au BufReadPost * syn match    cCustomClass    "\w\+\s*::\w\+\s*::" contains=cCustomScope
-au BufReadPost * syn match    cCustomScope2    "\."
+au BufReadPost * syn match    cCustomScope2   "\."
 au BufReadPost * syn match    cCustomClass    "\.\w\+\s*\." contains=cCustomScope2
 
 hi def link cCustomFunc  Function
 hi def link cCustomClass Function
 
-" Add c syntax to proto files
-au BufRead,BufNewFile *.proto setfiletype c
+syn region Comment start=/"""/ end=/"""/
 
 set background=dark
 
@@ -22,33 +21,81 @@ set t_Co=256
 
 syntax on
 set hlsearch
-highlight Normal     guibg=#121212  guifg=gray    ctermbg=233   ctermfg=gray
-highlight Search     guibg=gray     guifg=black   ctermbg=gray  ctermfg=black
-highlight LineNr     guifg=#5A5A5A  ctermfg=238
-highlight Constant   guifg=White    ctermfg=White
-highlight Statement  gui=NONE       guifg=Yellow  cterm=NONE    ctermfg=Yellow
-highlight Identifier guifg=#5faf5f  ctermfg=71
-highlight Function   guifg=#00afaf  ctermfg=37
-highlight PreProc    guifg=Orange   ctermfg=214
-highlight Type       gui=NONE       guifg=#5fd75f cterm=NONE    ctermfg=77
-highlight Special    guifg=#af5f5f  ctermfg=131
-highlight Comment    guifg=#5f5faf  ctermfg=61
-highlight Directory  guifg=#5f5faf  ctermfg=61
-highlight Braces     guifg=#af5f5f  ctermfg=131
-highlight CursorLine cterm=NONE     guibg=#1c1c1c ctermbg=234
-highlight CursorColumn cterm=NONE   guibg=#1c1c1c ctermbg=234
 
-highlight Cursor guibg=white guifg=black
-highlight iCursor guibg=white guifg=black
-set guicursor=n-v-c:block-Cursor
-set guicursor+=i:ver25-iCursor
-set guicursor+=n-v-c:blinkon0
-set guicursor+=i:blinkwait10
+highlight   Normal           guibg=#121212     guifg=gray      gui=NONE     ctermbg=233    ctermfg=gray    cterm=NONE
+highlight   Search           guibg=NONE        guifg=NONE      gui=standout ctermbg=NONE   ctermfg=NONE    cterm=standout
+highlight   Folded           guibg=#262626     guifg=#5f5faf   gui=NONE     ctermbg=235    ctermfg=61      cterm=NONE
 
-highlight DiffAdd    ctermfg=White   ctermbg=DarkGreen
-highlight DiffDelete ctermfg=DarkRed ctermfg=DarkRed
-highlight DiffChange ctermfg=White   ctermbg=DarkBlue
-highlight DiffText   ctermbg=Yellow
+highlight   LineNr           guibg=NONE        guifg=#5A5A5A   gui=NONE     ctermbg=NONE   ctermfg=238     cterm=NONE
+highlight   Constant         guibg=NONE        guifg=White     gui=NONE     ctermbg=NONE   ctermfg=White   cterm=NONE
+highlight   Statement        guibg=NONE        guifg=#ff5f5f   gui=NONE     ctermbg=NONE   ctermfg=203     cterm=NONE
+highlight   Identifier       guibg=NONE        guifg=#5faf5f   gui=NONE     ctermbg=NONE   ctermfg=71      cterm=NONE
+highlight   Function         guibg=NONE        guifg=#00afaf   gui=NONE     ctermbg=NONE   ctermfg=37      cterm=NONE
+highlight   PreProc          guibg=NONE        guifg=#DFDF5F   gui=NONE     ctermbg=NONE   ctermfg=185     cterm=NONE
+highlight   Type             guibg=NONE        guifg=#5faf5f   gui=NONE     ctermbg=NONE   ctermfg=71      cterm=NONE
+highlight   Special          guibg=NONE        guifg=#af5f5f   gui=NONE     ctermbg=NONE   ctermfg=131     cterm=NONE
+highlight   Comment          guibg=NONE        guifg=#5f5faf   gui=NONE     ctermbg=NONE   ctermfg=61      cterm=NONE
+highlight   Directory        guibg=NONE        guifg=#5f5faf   gui=NONE     ctermbg=NONE   ctermfg=61      cterm=NONE
+highlight   Braces           guibg=NONE        guifg=#af5f5f   gui=NONE     ctermbg=none   ctermfg=131     cterm=NONE
+
+highlight   PMenu            guibg=lightpink   guifg=black     gui=NONE     ctermbg=219    ctermfg=black   cterm=NONE
+highlight   PMenuSel         guibg=gray        guifg=black     gui=NONE     ctermbg=gray   ctermfg=black   cterm=NONE
+
+highlight   CursorLine       guibg=#1c1c1c     guifg=NONE      gui=NONE     ctermbg=234    ctermfg=NONE    cterm=NONE
+highlight   CursorColumn     guibg=#1c1c1c     guifg=NONE      gui=NONE     ctermbg=234    ctermfg=NONE    cterm=NONE
+highlight   colorcolumn      guibg=#1c1c1c     guifg=NONE      gui=NONE     ctermbg=234    ctermfg=NONE    cterm=NONE
+
+highlight   DiffDelete       guibg=#262626     guifg=#d75f5f   gui=NONE     ctermbg=235    ctermfg=167     cterm=NONE
+highlight   DiffText         guibg=#000080     guifg=NONE      gui=NONE     ctermbg=17   ctermfg=NONE    cterm=NONE
+highlight   DiffAdd          guibg=#262626     guifg=NONE      gui=NONE     ctermbg=17    ctermfg=NONE    cterm=NONE
+highlight   DiffChange       guibg=#262626     guifg=NONE      gui=NONE     ctermbg=235    ctermfg=NONE    cterm=NONE
+
+highlight   GroupMembers     guibg=NONE        guifg=White     gui=bold     ctermbg=NONE   ctermfg=15      cterm=bold
+highlight   Enums            guibg=NONE        guifg=#dfaf87   gui=NONE     ctermbg=NONE   ctermfg=180     cterm=NONE
+highlight   Namespace        guibg=NONE        guifg=#af5fff   gui=NONE     ctermbg=NONE   ctermfg=135     cterm=NONE
+highlight   NamespaceMembers guibg=#121212     guifg=#AF87FF   gui=NONE     ctermbg=NONE   ctermfg=141     cterm=NONE
+highlight   Globals          guibg=NONE        guifg=#ff87ff   gui=italic   ctermbg=NONE   ctermfg=213     cterm=NONE
+
+highlight GitGutterAdd    guifg=#009900 ctermfg=2
+highlight GitGutterChange guifg=#bbbb00 ctermfg=3
+highlight GitGutterDelete guifg=#ff2222 ctermfg=1
+
+"--------------------------------------------------------------------------------------------------
+" CCLS highlight groups
+" To check type under cursor :LspCxxHlCursorSym
+"
+" Class Member variables
+hi def link LspCxxHlGroupMemberVariable GroupMembers
+hi def link LspCxxHlGroupMemberStatic GroupMembers
+hi def link LspCxxHlGroupMemberConstant GroupMembers
+" Statics do not get assigned a group correctly, for whatever reason. However,
+" other types are alredy covered, so this is all that's left
+hi def link LspCxxHlSymUnknownVariableStatic GroupMembers
+
+" c++ function variables/constants:
+hi def link LspCxxHlSymMethodVariable Normal
+hi def link LspCxxHlSymMethodConstant Normal
+hi def link LspCxxHlSymFunctionVariable Normal
+hi def link LspCxxHlSymFunctionConstant Normal
+
+" Enums
+hi def link LspCxxHlGroupEnumConstant Enums
+hi def link LspCxxHlSymEnumMember Enums
+
+" Namespace
+hi def link LspCxxHlGroupNamespace Namespace
+hi def link LspCxxHlSymNamespace Namespace
+hi def link LspCxxHlSymNamespaceVariable  NamespaceMembers
+hi def link LspCxxHlSymNamespaceConstant NamespaceMembers
+hi def link LspCxxHlSymNamespaceStatic NamespaceMembers
+hi def link LspCxxHlSymNamespaceFunction NamespaceMembers
+
+" Highlight globals (File scope)
+hi def link LspCxxHlSymFileVariable Globals
+hi def link LspCxxHlSymFileStatic Globals
+hi def link LspCxxHlSymFileConstant Globals
+hi def link LspCxxHlSymFileFunction Globals
+
 
 " Color references
 if 0

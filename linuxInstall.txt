@@ -11,7 +11,13 @@
 #    python-glade2 tig
 
 pacman -S base-devel
-pacman -S git tk svn firefox mercurial cmake tcl ruby perl tree ctags cscope zsh dos2unix gvim samba smbclient bash-completion meld terminator arandr chromium tig
+pacman -S git tk svn firefox mercurial cmake tcl ruby perl tree ctags cscope zsh dos2unix gvim samba smbclient bash-completion meld terminator arandr chromium tig yay feh dmenu arandr ccls go slack
+
+# other stuff to work with i3
+pacman -S dunst
+
+$ get regular i3 and i3-status
+pacman -S i3
 
 #--------------------------------------------
 # Link to all the dotfiles
@@ -35,10 +41,3 @@ ln -s dotfiles/.gitconfig .gitconfig
 # Update origimall .bashrc to include my aliases
 #--------------------------------------------
 #-----> Open .bashrc, add 'source ~/.bash_aliases' to the end
-#--------------------------------------------
-# Install Compilers
-#--------------------------------------------
-# Update the bash_aliases to point to the compiler bins.
-
-# http://www.microchip.com/pagehandler/en-us/family/mplabx/#downloads
-# https://sourcery.mentor.com/GNUToolchain/subscription3053?lite=arm

@@ -2,6 +2,9 @@ source ~/.bash_other
 
 set -o vi
 
+alias tunnel='sshuttle --pidfile=/tmp/sshuttle.pid -r nduma7100548@c02sr0uvh03m.local --dns  10.0.0.0/8 -D'
+alias tunnelx='[[ -f /tmp/sshuttle.pid ]] && kill $(cat /tmp/sshuttle.pid) && echo "Disconnected."'
+
 # Disable software flow conntrol (XON/XOFF), it's annoying in vim
 stty -ixon
 

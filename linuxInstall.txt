@@ -11,13 +11,25 @@
 #    python-glade2 tig
 
 pacman -S base-devel
-pacman -S git tk svn firefox mercurial cmake tcl ruby perl tree ctags cscope zsh dos2unix gvim samba smbclient bash-completion meld terminator arandr chromium tig yay feh dmenu arandr ccls go slack
+pacman -S git tk svn firefox mercurial cmake tcl ruby perl tree ctags cscope zsh dos2unix gvim samba smbclient bash-completion meld terminator arandr chromium tig yay feh dmenu arandr ccls go slack pactl playerctl
 
-# other stuff to work with i3
-pacman -S dunst
-
-$ get regular i3 and i3-status
+# get regular i3 and i3-status
 pacman -S i3
+
+# notification deamon thiny
+yay -S dunst
+
+# pulse audio GUI, network applet, volume control, lock screen
+yay -S pavucontrol network-manager-applet pasystray i3lock
+
+# i3 layout saving requirement
+yay -S perl-anyevent-i3
+
+# i3 layout saving
+yay -S i3-resurrect
+
+# Bluetooth
+yay -S bluez bluez-util blueman
 
 #--------------------------------------------
 # Link to all the dotfiles

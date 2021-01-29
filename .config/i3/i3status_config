@@ -64,30 +64,9 @@ volume master {
 }
 
 volume mic {
-  format = " %volume"
+  format = "  Live"
   format_muted = "  Muted"
   device = "hw:2"
   mixer = "Capture"
-  mixer_idx = 0
-}
-
-
-volume Logitech_mic {
-  format = "  On %volume"
-  format_muted = "  muted (%volume)"
-  device = "pulse:alsa_input.usb-Logitech_Logitech_G930_Headset-00.mono-fallback"
-}
-
-volume Front_mic {
-  format = "  On %volume"
-  format_muted = "  muted (%volume)"
-  device = "pulse:alsa_input.pci-0000_00_1b.0.analog-stereo"
-}
-
-volume orig_mic {
-  format = " %volume"
-  format_muted = " (%volume)"
-  device = "default"
-  mixer = "Rear Mic"
   mixer_idx = 0
 }

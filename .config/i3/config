@@ -130,9 +130,9 @@ bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcu
 # We use variables to avoid repeating the names in multiple places.
 set $ws1 "1: media"
 set $ws2 "2: web/slack"
-set $ws3 "3: code"
-set $ws4 "4: web"
-set $ws5 "5: main code"
+set $ws3 "3: other"
+set $ws4 "4: code"
+set $ws5 "5: tools"
 set $ws6 "6: webex"
 set $ws7 "7: remmina"
 set $ws8 "8: misc"
@@ -143,7 +143,7 @@ set $ws10 "10: gaming"
 workspace $ws1 output DP-3
 workspace $ws2 output DP-2
 workspace $ws3 output DP-2
-workspace $ws4 output DP-2
+workspace $ws4 output DVI-I-1
 workspace $ws5 output DVI-I-1
 workspace $ws6 output DVI-I-1
 workspace $ws7 output DVI-I-1

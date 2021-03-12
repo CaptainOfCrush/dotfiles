@@ -12,6 +12,7 @@ order += "memory"
 order += "tztime local"
 order += "volume master"
 order += "volume mic"
+order += "volume mic2"
 
 ethernet ens1f0 {
         format_up = "E: %ip (%speed)"
@@ -66,7 +67,15 @@ volume master {
 volume mic {
   format = "  Live"
   format_muted = "  Muted"
-  device = "hw:2"
+  device = "hw:0"
+  mixer = "Capture"
+  mixer_idx = 0
+}
+
+volume mic2 {
+  format = "  Live"
+  format_muted = "  Muted"
+  device = "hw:1"
   mixer = "Capture"
   mixer_idx = 0
 }
